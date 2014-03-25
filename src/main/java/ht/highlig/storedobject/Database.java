@@ -363,14 +363,14 @@ public class Database {
             this.type = type;
         }
 
-        public Request addIds(List<String> ids) {
+        public Request withIds(List<String> ids) {
             if (ids == null || ids.size() == 0) return this;
             if (this.ids == null) this.ids = new LinkedList<String>();
             this.ids.addAll(ids);
             return this;
         }
 
-        public Request addId(String id) {
+        public Request withId(String id) {
             if (this.ids == null) this.ids = new LinkedList<String>();
             this.ids.add(id);
             return this;
