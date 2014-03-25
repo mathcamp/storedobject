@@ -10,6 +10,9 @@ Database.with(context).load(TYPE.person).withId(id).execute();
 
 //Fetching with tags:
 Database.with(context).load(TYPE.person).tagEquals("name", "john").execute();
+
+//Fetching a list of objects sorted by ts:
+Database.with(context).load(TYPE.person).orderByTs(SORT_ORDER.DESC).limit(20).execute();
 ```
 
 Here obj implements ```Database.StoredObject```
