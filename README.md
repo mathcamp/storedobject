@@ -35,7 +35,7 @@ public enum TYPE implements Database.StoredObject.TYPE {
   }
   
   @Override
-  public Class getName() {
+  public String getName() {
     return name();
   }
 }
