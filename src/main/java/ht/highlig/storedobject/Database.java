@@ -1,5 +1,4 @@
 package ht.highlig.storedobject;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -17,23 +16,25 @@ import java.util.Set;
 /**
  * Created by revant on 1/30/14.
  */
+
 public class Database {
     public static final String TAG = Database.class.getName();
     public static final Gson GSON = new Gson();
 
-
-  public interface StoredObject {
-        //This should be implemented by an enum
-        public interface TYPE {
-          public String getName();
-          public Class getStoredObjectClass();
+    public interface StoredObject {
+        public enum TYPE {
+            ;
+            public Class cls;
+            TYPE(Class cls) {
+                this.cls = cls;
+            }
         }
 
         TYPE getStoredObjectType();
         String getStoredObjectId();
         List<Pair<String, String>> getStoredObjectSearchableTags();
-        // Timestamp in seconds
-        Double getStoredObjectTimestamp();
+        // Timestamp in milliseconds
+        Long getStoredObjectTimestampMillis();
     }
 
     public enum SORT_ORDER {
@@ -76,14 +77,14 @@ public class Database {
                         object.getStoredObjectId());
 
                 setStringContentValue(contentValues, ObjectsTableColumn.type,
-                        object.getStoredObjectType().getName());
+                        object.getStoredObjectType().name());
 
                 setStringContentValue(contentValues, ObjectsTableColumn.json,
                         GSON.toJson(object));
 
-                Double ts = object.getStoredObjectTimestamp();
+                Long ts = object.getStoredObjectTimestampMillis();
                 Long msTs = (ts == null || ts == 0) ? System.currentTimeMillis()
-                        : (long)(ts * 1000);
+                        : ts;
                 contentValues.put(ObjectsTableColumn.ts.name(), msTs);
 
                 db.insertWithOnConflict(
@@ -91,7 +92,7 @@ public class Database {
                         SQLiteDatabase.CONFLICT_REPLACE);
 
                 //Delete old tags
-                String[] whereArgs = new String[]{object.getStoredObjectType().getName(),
+                String[] whereArgs = new String[]{object.getStoredObjectType().name(),
                     object.getStoredObjectId()};
                 db.delete(DatabaseSchema.TAGS_TABLE,
                         StringUtil.concat(TagsTableColumn.type, "= ?",
@@ -102,7 +103,7 @@ public class Database {
                 if (tags != null && tags.size() > 0) {
                     for (Pair<String, String> pair: tags) {
                         setStringContentValue(tagCvs, TagsTableColumn.id, object.getStoredObjectId());
-                        setStringContentValue(tagCvs, TagsTableColumn.type, object.getStoredObjectType().getName());
+                        setStringContentValue(tagCvs, TagsTableColumn.type, object.getStoredObjectType().name());
                         setStringContentValue(tagCvs, TagsTableColumn.tag, pair.first);
                         setStringContentValue(tagCvs, TagsTableColumn.value, pair.second);
                         db.insertWithOnConflict(DatabaseSchema.TAGS_TABLE, null, tagCvs,
@@ -129,7 +130,7 @@ public class Database {
      * @return
      */
     private  <T extends StoredObject> List<T> loadObjects(StoredObject.TYPE type, String order,
-                                                          int limit) {
+                                                          int limit, Long before, Long after) {
         SQLiteDatabase db = null;
         Cursor cursor = null;
         mDbAccessManager.lockDbForRead();
@@ -142,13 +143,26 @@ public class Database {
                     ObjectsTableColumn.json.name(),
                     ObjectsTableColumn.ts.name()};
 
-            String selection = StringUtil.concat(ObjectsTableColumn.type, "=?");
-            String[] selectionArgs = new String[]{type.getName()};
+            StringBuilder selection = new StringBuilder(StringUtil.concat(ObjectsTableColumn.type, "=?"));
+            LinkedList<String> selectionArgs = new LinkedList<String>();
+            selectionArgs.add(type.name());
+            if (before != null) {
+                selection.append(" AND ").
+                        append(ObjectsTableColumn.ts).
+                        append("<=?");
+                selectionArgs.add(before.toString());
+            }
+            if (after != null) {
+                selection.append(" AND ").
+                        append(ObjectsTableColumn.ts).
+                        append(">=?");
+                selectionArgs.add(after.toString());
+            }
             cursor = db.query(
                     DatabaseSchema.OBJECTS_TABLE,
                     columns,
-                    selection,
-                    selectionArgs,
+                    selection.toString(),
+                    selectionArgs.toArray(new String[selectionArgs.size()]),
                     null,
                     null,
                     order,
@@ -158,7 +172,7 @@ public class Database {
             if (cursor.moveToFirst()) {
                 do {
                     String jsonString = cursor.getString(2);
-                    storedObjects.add((T) GSON.fromJson(jsonString, type.getStoredObjectClass()));
+                    storedObjects.add((T) GSON.fromJson(jsonString, type.cls));
                 } while (cursor.moveToNext());
             }
             return storedObjects;
@@ -194,7 +208,7 @@ public class Database {
             int i = 0;
             for (String id : ids) {
                 selectionArgs[i*2] = id;
-                selectionArgs[i*2 + 1] = type.getName();
+                selectionArgs[i*2 + 1] = type.name();
                 i++;
             }
             cursor = db.query(
@@ -212,7 +226,7 @@ public class Database {
                 do {
                     String objectType = cursor.getString(1);
                     String json = cursor.getString(2);
-                    StoredObject storedObject = (T)GSON.fromJson(json, type.getStoredObjectClass());
+                    StoredObject storedObject = (T)GSON.fromJson(json, type.cls);
                     storedObjects.add((T) storedObject);
                 } while (cursor.moveToNext());
             }
@@ -241,11 +255,10 @@ public class Database {
 
             ListIterator<String> selectionIt = selections.listIterator();
             ListIterator<String> argsIt = args.listIterator();
-            String typeSelection = StringUtil.concat(TagsTableColumn.type, "=", type.getName(), " AND ");
+            String typeSelection = StringUtil.concat(TagsTableColumn.type, "='", type, "' AND ");
             Set<String> finalIds = null;
             while (selectionIt.hasNext()) {
                 if (finalIds != null && finalIds.size() == 0) break;
-                selectionIt.next();
                 cursor = db.query(true,
                         DatabaseSchema.TAGS_TABLE,
                         columns,
@@ -281,6 +294,19 @@ public class Database {
         }
     }
 
+    public void deleteObjects(Collection<? extends StoredObject> objects) {
+        if (objects == null || objects.size() == 0) return;
+        StoredObject.TYPE[] types = new StoredObject.TYPE[objects.size()];
+        String[] ids = new String[objects.size()];
+        int i = 0;
+        for (StoredObject object: objects) {
+            types[i] = object.getStoredObjectType();
+            ids[i] = object.getStoredObjectId();
+            i++;
+        }
+        deleteObjects(types, ids);
+    }
+
     public void deleteObjects(StoredObject.TYPE[] types, String[] ids) {
         if (types == null || ids == null || types.length == 0 || ids.length == 0) return;
         SQLiteDatabase db = null;
@@ -293,7 +319,7 @@ public class Database {
             , " OR ", ids.length);
             String[] whereArgs = new String[ids.length * 2];
             for (int i=0; i < ids.length; i++) {
-                whereArgs[i*2] = types[i].getName();
+                whereArgs[i*2] = types[i].name();
                 whereArgs[i*2 + 1] = ids[i];
             }
             db.delete(DatabaseSchema.OBJECTS_TABLE, selection, whereArgs);
@@ -323,7 +349,7 @@ public class Database {
             db = mDbAccessManager.getWritableDatabase();
             db.beginTransaction();
             String selection = StringUtil.concat(ObjectsTableColumn.type, " =? ");
-            String[] whereArgs = new String[]{type.getName()};
+            String[] whereArgs = new String[]{type.name()};
             db.delete(DatabaseSchema.OBJECTS_TABLE, selection, whereArgs);
             db.delete(DatabaseSchema.TAGS_TABLE, selection, whereArgs);
         } catch (Exception e) {
@@ -358,26 +384,32 @@ public class Database {
         SORT_ORDER tsOrdering;
         int limit;
         boolean truncate;
+        Long before = null;
+        Long after = null;
 
         public Request(StoredObject.TYPE type) {
             this.type = type;
         }
 
-        public Request withIds(List<String> ids) {
+        public Request addIds(List<String> ids) {
             if (ids == null || ids.size() == 0) return this;
             if (this.ids == null) this.ids = new LinkedList<String>();
             this.ids.addAll(ids);
             return this;
         }
 
-        public Request withId(String id) {
+        public Request addId(String id) {
             if (this.ids == null) this.ids = new LinkedList<String>();
             this.ids.add(id);
             return this;
         }
 
         public Request tagEquals(String tag, String value) {
-            return tagWithOperator(tag, "=", value, SqliteType.TEXT);
+            return tagEquals(tag, value, SqliteType.TEXT);
+        }
+
+        public Request tagEquals(String tag, Object value, SqliteType valueType) {
+            return tagWithOperator(tag, "=", value.toString(), valueType);
         }
 
         public Request tagGt(String tag, String value, SqliteType valueType) {
@@ -386,6 +418,16 @@ public class Database {
 
         public Request tagLt(String tag, String value, SqliteType valueType) {
             return tagWithOperator(tag, "<", value, valueType);
+        }
+
+        public Request tsGtEq(long timestampMs) {
+            after = timestampMs;
+            return this;
+        }
+
+        public Request tsLtEq(long timestampMs) {
+            before = timestampMs;
+            return this;
         }
 
         /**
@@ -449,7 +491,7 @@ public class Database {
                 Set<String> ids = getIdsFromSelection(type, tagSelects, tagSelectionArgs, limit);
                 retVal = loadObjects(type, ids, order);
             } else {
-                retVal = loadObjects(type, order, limit);
+                retVal = loadObjects(type, order, limit, before, after);
             }
             if (truncate) {
                 clearObjectsOfType(type);
@@ -457,6 +499,15 @@ public class Database {
             }
             return retVal;
         }
-     }
 
+        public <T extends StoredObject> T getFirst() {
+            List<T> list = execute();
+            if (list == null || list.size() == 0) {
+                Log.d(TAG, "No object of type: " + type + " found ");
+                return null;
+            } else {
+                return list.get(0);
+            }
+        }
+     }
 }
