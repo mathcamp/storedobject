@@ -63,7 +63,11 @@ public class Database {
         mDbAccessManager.lockDbForWrite();
         try {
             db = mDbAccessManager.getWritableDatabase();
-            db.beginTransaction();
+            if (db != null) {
+                db.beginTransaction();
+            } else {
+                throw new DatabaseException("Database can't be opened for writing");
+            }
 
             ContentValues contentValues = new ContentValues();
             ContentValues tagCvs = new ContentValues();
@@ -229,7 +233,7 @@ public class Database {
             return storedObjects;
         } catch (Exception e) {
             Log.e(TAG, "Unable to fetch stored object: " + e.getMessage());
-            return new ArrayList<T>();
+            return null;
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -309,7 +313,11 @@ public class Database {
         mDbAccessManager.lockDbForWrite();
         try {
             db = mDbAccessManager.getWritableDatabase();
-            db.beginTransaction();
+            if (db != null) {
+                db.beginTransaction();
+            } else {
+                throw new DatabaseException("Database can't be opened for writing");
+            }
             String selection = StringUtil.repeat(
                     StringUtil.concat(ObjectsTableColumn.type, "=?", " AND ", ObjectsTableColumn.id, " =? ")
             , " OR ", ids.length);
@@ -343,7 +351,11 @@ public class Database {
         mDbAccessManager.lockDbForWrite();
         try {
             db = mDbAccessManager.getWritableDatabase();
-            db.beginTransaction();
+            if (db != null) {
+                db.beginTransaction();
+            } else {
+                throw new DatabaseException("Database can't be opened for writing");
+            }
             String selection = StringUtil.concat(ObjectsTableColumn.type, " =? ");
             String[] whereArgs = new String[]{type.getTypeName()};
             db.delete(DatabaseSchema.OBJECTS_TABLE, selection, whereArgs);

@@ -43,7 +43,7 @@ class DatabaseAccessManager extends SQLiteOpenHelper {
   @Override
   public SQLiteDatabase getWritableDatabase() {
     SQLiteDatabase db = super.getWritableDatabase();
-    if (!db.isOpen()) {
+    if (db != null && !db.isOpen()) {
       // Sometimes for some reason the db returned could actually be
       // closed. For now, naively recall super#getWritableDatabase
       // to create or open the db in write mode.
@@ -57,7 +57,7 @@ class DatabaseAccessManager extends SQLiteOpenHelper {
   public SQLiteDatabase getReadableDatabase() {
     readers.incrementAndGet();
     SQLiteDatabase db = super.getReadableDatabase();
-    if (!db.isOpen()) {
+    if (db != null && !db.isOpen()) {
       // Sometimes for some reason the db returned could actually be
       // closed. For now, naively recall super#getReadableDatabase
       // to create or open the db in read mode.
