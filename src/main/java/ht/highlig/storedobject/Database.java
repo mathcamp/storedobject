@@ -27,10 +27,10 @@ public class Database {
             public Class getTypeClass();
         }
 
-        TYPE getStoredObjectType();
-        String getStoredObjectId();
-        List<Pair<String, String>> getStoredObjectSearchableTags();
-        Long getStoredObjectTimestampMillis();
+        public TYPE getStoredObjectType();
+        public String getStoredObjectId();
+        public List<Pair<String, String>> getStoredObjectSearchableTags();
+        public Long getStoredObjectTimestampMillis();
     }
 
     public enum SORT_ORDER {
