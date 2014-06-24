@@ -1,15 +1,21 @@
 buildscript {
     repositories {
         mavenCentral()
+        maven {
+            url 'https://oss.sonatype.org/content/repositories/snapshots/'
+        }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:0.9.+'
+        classpath 'org.robolectric.gradle:gradle-android-test-plugin:0.10.+'
     }
 }
+
 apply plugin: 'android-library'
+apply plugin: 'android-test'
 
 repositories {
-        mavenCentral()
+    mavenCentral()
 }
 
 android {
@@ -21,6 +27,7 @@ android {
         targetSdkVersion 19
         versionCode 1
         versionName "1.0"
+        testInstrumentationRunner "com.google.android.apps.common.testing.testrunner.GoogleInstrumentationTestRunner"
     }
     buildTypes {
         release {
@@ -28,10 +35,29 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
+
+    sourceSets {
+        androidTest {
+            setRoot('src/test')
+        }
+    }
+}
+
+androidTest {
+    include '**/*Test.class'
 }
 
 dependencies {
-    compile 'com.android.support:appcompat-v7:+'
-    compile 'com.google.code.gson:gson:2.2.4'
+    compile ('com.android.support:appcompat-v7:+') {
+        exclude group: "org.codehaus"
+    }
+    compile ('com.google.code.gson:gson:2.2.4') {
+        exclude group: "org.codehaus"
+    }
     compile fileTree(dir: 'libs', include: ['*.jar'])
+
+    androidTestCompile ('junit:junit:4.11') {
+        exclude group: "org.codehaus"
+    }
+    androidTestCompile 'org.robolectric:robolectric:2.3'
 }
