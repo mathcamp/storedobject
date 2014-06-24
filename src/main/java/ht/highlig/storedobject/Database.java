@@ -22,18 +22,14 @@ public class Database {
     public static final Gson GSON = new Gson();
 
     public interface StoredObject {
-        public enum TYPE {
-            ;
-            public Class cls;
-            TYPE(Class cls) {
-                this.cls = cls;
-            }
+        public interface TYPE {
+            public String getTypeName();
+            public Class getTypeClass();
         }
 
         TYPE getStoredObjectType();
         String getStoredObjectId();
         List<Pair<String, String>> getStoredObjectSearchableTags();
-        // Timestamp in milliseconds
         Long getStoredObjectTimestampMillis();
     }
 
@@ -77,7 +73,7 @@ public class Database {
                         object.getStoredObjectId());
 
                 setStringContentValue(contentValues, ObjectsTableColumn.type,
-                        object.getStoredObjectType().name());
+                        object.getStoredObjectType().getTypeName());
 
                 setStringContentValue(contentValues, ObjectsTableColumn.json,
                         GSON.toJson(object));
@@ -92,7 +88,7 @@ public class Database {
                         SQLiteDatabase.CONFLICT_REPLACE);
 
                 //Delete old tags
-                String[] whereArgs = new String[]{object.getStoredObjectType().name(),
+                String[] whereArgs = new String[]{object.getStoredObjectType().getTypeName(),
                     object.getStoredObjectId()};
                 db.delete(DatabaseSchema.TAGS_TABLE,
                         StringUtil.concat(TagsTableColumn.type, "= ?",
@@ -103,7 +99,7 @@ public class Database {
                 if (tags != null && tags.size() > 0) {
                     for (Pair<String, String> pair: tags) {
                         setStringContentValue(tagCvs, TagsTableColumn.id, object.getStoredObjectId());
-                        setStringContentValue(tagCvs, TagsTableColumn.type, object.getStoredObjectType().name());
+                        setStringContentValue(tagCvs, TagsTableColumn.type, object.getStoredObjectType().getTypeName());
                         setStringContentValue(tagCvs, TagsTableColumn.tag, pair.first);
                         setStringContentValue(tagCvs, TagsTableColumn.value, pair.second);
                         db.insertWithOnConflict(DatabaseSchema.TAGS_TABLE, null, tagCvs,
@@ -145,7 +141,7 @@ public class Database {
 
             StringBuilder selection = new StringBuilder(StringUtil.concat(ObjectsTableColumn.type, "=?"));
             LinkedList<String> selectionArgs = new LinkedList<String>();
-            selectionArgs.add(type.name());
+            selectionArgs.add(type.getTypeName());
             if (before != null) {
                 selection.append(" AND ").
                         append(ObjectsTableColumn.ts).
@@ -172,7 +168,7 @@ public class Database {
             if (cursor.moveToFirst()) {
                 do {
                     String jsonString = cursor.getString(2);
-                    storedObjects.add((T) GSON.fromJson(jsonString, type.cls));
+                    storedObjects.add((T) GSON.fromJson(jsonString, type.getTypeClass()));
                 } while (cursor.moveToNext());
             }
             return storedObjects;
@@ -208,7 +204,7 @@ public class Database {
             int i = 0;
             for (String id : ids) {
                 selectionArgs[i*2] = id;
-                selectionArgs[i*2 + 1] = type.name();
+                selectionArgs[i*2 + 1] = type.getTypeName();
                 i++;
             }
             cursor = db.query(
@@ -226,7 +222,7 @@ public class Database {
                 do {
                     String objectType = cursor.getString(1);
                     String json = cursor.getString(2);
-                    StoredObject storedObject = (T)GSON.fromJson(json, type.cls);
+                    StoredObject storedObject = (T)GSON.fromJson(json, type.getTypeClass());
                     storedObjects.add((T) storedObject);
                 } while (cursor.moveToNext());
             }
@@ -319,7 +315,7 @@ public class Database {
             , " OR ", ids.length);
             String[] whereArgs = new String[ids.length * 2];
             for (int i=0; i < ids.length; i++) {
-                whereArgs[i*2] = types[i].name();
+                whereArgs[i*2] = types[i].getTypeName();
                 whereArgs[i*2 + 1] = ids[i];
             }
             db.delete(DatabaseSchema.OBJECTS_TABLE, selection, whereArgs);
@@ -349,7 +345,7 @@ public class Database {
             db = mDbAccessManager.getWritableDatabase();
             db.beginTransaction();
             String selection = StringUtil.concat(ObjectsTableColumn.type, " =? ");
-            String[] whereArgs = new String[]{type.name()};
+            String[] whereArgs = new String[]{type.getTypeName()};
             db.delete(DatabaseSchema.OBJECTS_TABLE, selection, whereArgs);
             db.delete(DatabaseSchema.TAGS_TABLE, selection, whereArgs);
         } catch (Exception e) {
