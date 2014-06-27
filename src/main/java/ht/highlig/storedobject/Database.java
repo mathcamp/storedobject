@@ -4,8 +4,9 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
-import android.util.Pair;
+
 import com.google.gson.Gson;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -29,7 +30,7 @@ public class Database {
 
         public TYPE getStoredObjectType();
         public String getStoredObjectId();
-        public List<Pair<String, String>> getStoredObjectSearchableTags();
+        public List<SearchableTagValuePair> getStoredObjectSearchableTags();
         public Long getStoredObjectTimestampMillis();
     }
 
@@ -53,9 +54,9 @@ public class Database {
     }
 
     public void saveObject(StoredObject object) {
-        List<StoredObject> objects = new LinkedList<StoredObject>();
-        objects.add(object);
-        saveObjects(objects);
+        List<StoredObject> list = new ArrayList<StoredObject>();
+        list.add(object);
+        saveObjects(list);
     }
 
     public void saveObjects(Collection<? extends StoredObject> objects) {
@@ -99,13 +100,13 @@ public class Database {
                         " AND ", TagsTableColumn.id, "= ?"),
                         whereArgs);
                 //Add new tags
-                List<Pair<String, String>> tags = object.getStoredObjectSearchableTags();
+                List<SearchableTagValuePair> tags = object.getStoredObjectSearchableTags();
                 if (tags != null && tags.size() > 0) {
-                    for (Pair<String, String> pair: tags) {
+                    for (SearchableTagValuePair pair: tags) {
                         setStringContentValue(tagCvs, TagsTableColumn.id, object.getStoredObjectId());
                         setStringContentValue(tagCvs, TagsTableColumn.type, object.getStoredObjectType().getTypeName());
-                        setStringContentValue(tagCvs, TagsTableColumn.tag, pair.first);
-                        setStringContentValue(tagCvs, TagsTableColumn.value, pair.second);
+                        setStringContentValue(tagCvs, TagsTableColumn.tag, pair.key);
+                        setStringContentValue(tagCvs, TagsTableColumn.value, pair.value);
                         db.insertWithOnConflict(DatabaseSchema.TAGS_TABLE, null, tagCvs,
                                 SQLiteDatabase.CONFLICT_REPLACE);
                     }
@@ -516,6 +517,21 @@ public class Database {
             } else {
                 return list.get(0);
             }
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getName() + "{" +
+                    "type:" + type +
+                    ",ids:" + ids +
+                    ",tagSelects:" + tagSelects +
+                    ",tagOrderBy:" + tagOrderBy +
+                    ",orderByTagName:" + orderByTagName +
+                    ",tsOrdering:" + tsOrdering +
+                    ",limit:" + limit +
+                    ",trucate:" + truncate +
+                    ",before:" + before +
+                    ",after:" + after;
         }
      }
 }
