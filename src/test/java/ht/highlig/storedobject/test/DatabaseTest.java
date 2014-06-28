@@ -58,6 +58,9 @@ public class DatabaseTest {
         Person y = new Person("fred", "another id", "http://anotherurl", 4, false);
         Person z = new Person("james", "some id", "http://someurl", 7, true);
         Database db = Database.with(context);
+        db.saveObject(x);
+        db.saveObject(y);
+        db.saveObject(z);
         List<Person> ps = Arrays.asList(x, y, z);
         List<Person> results = (List<Person>)(List<?>)db.load(TYPE.person)
                 .orderByTs(Database.SORT_ORDER.DESC)
