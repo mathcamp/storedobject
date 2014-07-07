@@ -2,11 +2,12 @@ buildscript {
     repositories {
         mavenLocal()
         mavenCentral()
+        maven { url 'https://github.com/rockerhieu/mvn-repo/raw/master/' }
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.10.+'
-        classpath 'org.robolectric.gradle:gradle-android-test-plugin:0.10.+'
+        classpath 'com.android.tools.build:gradle:0.12.+'
+        classpath 'org.robolectric.gradle:gradle-android-test-plugin:0.10.1-SNAPSHOT'
     }
 }
 
@@ -27,7 +28,7 @@ android {
         exclude 'META-INF/NOTICE'
     }
     compileSdkVersion 19
-    buildToolsVersion "19.0.3"
+    buildToolsVersion "19.1.0"
 
     defaultConfig {
         minSdkVersion 8
@@ -62,7 +63,7 @@ dependencies {
         }
     }
 
-    compile ('com.android.support:appcompat-v7:+')
+    compile ('com.android.support:appcompat-v7:20.0.0')
     compile ('com.google.code.gson:gson:2.2.4')
 
     androidTestCompile('junit:junit:4.11')
