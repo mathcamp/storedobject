@@ -268,7 +268,7 @@ public class Database {
                         null,
                         null,
                         null,
-                        limit > 0 ? StringUtil.concat("LIMIT ", limit) : null);
+                        limit > 0 ? String.valueOf(limit) : null);
                 if (cursor.getCount() == 0) break;
 
                 Set currentIds = new HashSet(cursor.getCount());

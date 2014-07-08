@@ -49,6 +49,14 @@ public class DatabaseTest {
         );
     }
 
+    private <T> Set<T> toSet(Collection<T> collection) {
+        Set<T> set = new HashSet<T>();
+        for (T item: collection) {
+            set.add(item);
+        }
+        return set;
+    }
+
     @Before
     public void setup() {
         context = new Activity();
@@ -156,4 +164,46 @@ public class DatabaseTest {
         );
     }
 
+    @Test
+    public void testTagEqualsLoad() {
+        List<Person> people = makePeople();
+
+        Database db = Database.with(context);
+        db.saveObjects(people);
+
+        List<Person> results =
+                (List<Person>)(List<?>)db.load(TYPE.person)
+                        .tagEquals("name", "frank")
+                        .execute();
+
+        assertEquals(
+                toSet(people.subList(0, 3)),
+                toSet(results)
+        );
+    }
+
+    @Test
+    public void testLoadMultipleConstraints() {
+        List<Person> people = makePeople();
+
+        Database db = Database.with(context);
+        db.saveObjects(people);
+
+        Set<Person> results =
+                toSet((List<Person>)(List<?>)db.load(TYPE.person)
+                        .tagEquals("name", "frank")
+                        .limit(2)
+                        .orderByTs(Database.SORT_ORDER.DESC)
+                        .execute());
+
+        Set<Person> permutation1 = toSet(Arrays.asList(people.get(0), people.get(1)));
+        Set<Person> permutation3 = toSet(Arrays.asList(people.get(0), people.get(2)));
+        Set<Person> permutation2 = toSet(Arrays.asList(people.get(1), people.get(2)));
+
+        assertTrue(
+                permutation1.equals(results) ||
+                        permutation2.equals(results) ||
+                        permutation3.equals(results)
+        );
+    }
 }

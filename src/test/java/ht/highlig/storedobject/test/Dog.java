@@ -67,4 +67,9 @@ public class Dog implements Database.StoredObject {
                 this.name.equals(((Dog) other).name) &&
                 this.is_striped == ((Dog) other).is_striped;
     }
+
+    @Override
+    public int hashCode() {
+        return this.id.hashCode();
+    }
 }

@@ -74,4 +74,9 @@ public class Person implements Database.StoredObject {
                 this.name.equals(((Person) other).name) &&
                 this.image_url.equals(((Person) other).image_url);
     }
+
+    @Override
+    public int hashCode() {
+        return this.id.hashCode();
+    }
 }
