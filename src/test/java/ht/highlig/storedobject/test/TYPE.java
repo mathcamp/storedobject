@@ -6,7 +6,8 @@ import ht.highlig.storedobject.Database;
  * Created by bkase on 6/24/14.
  */
 public enum TYPE implements Database.StoredObject.TYPE {
-    person(Person.class);
+    person(Person.class),
+    dog(Dog.class);
 
     private final Class cls;
 

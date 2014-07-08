@@ -59,10 +59,10 @@ public class Person implements Database.StoredObject {
     public String toString() {
         return getClass().getName() + "{" +
                 "name: " + name +
-                "id" + id +
-                "image_url" + image_url +
-                "age" + age +
-                "is_real" + is_real + "}";
+                ",id" + id +
+                ",image_url" + image_url +
+                ",age" + age +
+                ",is_real" + is_real + "}";
     }
 
     @Override
