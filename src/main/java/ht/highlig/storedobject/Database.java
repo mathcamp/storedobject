@@ -357,12 +357,12 @@ public class Database {
             } else {
                 throw new DatabaseException("Database can't be opened for writing");
             }
-            String selection = StringUtil.concat(ObjectsTableColumn.type, " =? person");
-            // String[] whereArgs = new String[]{type.getTypeName()};
-            String[] whereArgs = new String[]{};
+            String selection = StringUtil.concat(ObjectsTableColumn.type, "=?");
+            String[] whereArgs = new String[]{type.getTypeName()};
             db.delete(DatabaseSchema.OBJECTS_TABLE, selection, whereArgs);
             db.delete(DatabaseSchema.TAGS_TABLE, selection, whereArgs);
-            Log.e(TAG, "hello");
+
+            db.setTransactionSuccessful();
         } catch (Exception e) {
             Log.e(TAG, "Error when storing object:\n" + e.getMessage());
             System.out.println(e);
