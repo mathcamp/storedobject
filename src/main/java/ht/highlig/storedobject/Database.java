@@ -167,7 +167,7 @@ public class Database {
                     null,
                     null,
                     order,
-                    limit > 0 ? StringUtil.concat("LIMIT ", limit) : null);
+                    limit > 0 ? String.valueOf(limit) : null);
 
             List<T> storedObjects = new ArrayList<T>();
             if (cursor.moveToFirst()) {

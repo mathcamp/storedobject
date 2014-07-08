@@ -11,8 +11,11 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import ht.highlig.storedobject.Database;
 
@@ -29,8 +32,9 @@ public class DatabaseTest {
 
     private List<Person> makePeople() {
         return Arrays.asList(
+            new Person("frank", "another id", "http://anotherurl", 4, false),
             new Person("frank", "an id", "http://aurl", 5, true),
-            new Person("fred", "another id", "http://anotherurl", 4, false),
+            new Person("frank", "a bunch of ids", "http://anotherurl", 4, false),
             new Person("harold", "id man", "http://aprourl", 2, false),
             new Person("james", "some id", "http://someurl", 7, true),
             new Person("zach", "ids", "http://zachsurl", 19, false)
@@ -133,4 +137,23 @@ public class DatabaseTest {
         assertEquals(Collections.<Person>emptyList(), peopleResults);
         assertEquals(dogs, dogResults);
     }
+
+    @Test
+    public void testLimit() {
+        List<Person> people = makePeople();
+
+        Database db = Database.with(context);
+        db.saveObjects(people);
+
+        List<Person> results =
+                (List<Person>)(List<?>)db.load(TYPE.person)
+                        .limit(2)
+                        .execute();
+
+        assertEquals(
+                people.subList(0, 2),
+                results
+        );
+    }
+
 }
